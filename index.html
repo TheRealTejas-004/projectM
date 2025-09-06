@@ -55,37 +55,55 @@
       emailjs.init("uUP20PajbSsucUyeQ");
     })();
 
-    // Set today's date as max
-    const today = new Date().toISOString().split("T")[0];
-    document.getElementById("dob").setAttribute("max", today);
+    const monthYear = document.getElementById("month-year");
+    const dates = document.getElementById("dates");
+    const output = document.getElementById("output");
+    let currentDate = new Date();
 
-    document.getElementById("dob").addEventListener("change", function() {
-      document.getElementById("result").innerText =
-        "📅 You selected: " + this.value;
-    });
+    function renderCalendar(date) {
+      const year = date.getFullYear();
+      const month = date.getMonth();
 
-    // Handle form submit
-    document.getElementById("proposalForm").addEventListener("submit", function(e) {
-      e.preventDefault(); // ✅ stop default POST request (fixes 405)
+      monthYear.textContent = date.toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+      });
 
-      const formData = {
-        wname: document.getElementById("wname").value,
-        wemail: document.getElementById("wemail").value,
-        hname: document.getElementById("hname").value,
-        hemail: document.getElementById("hemail").value,
-        dob: document.getElementById("dob").value
-      };
+      dates.innerHTML = "";
 
-      emailjs.send("service_brl5mbu", "template_4gw5kam", formData)
-        .then(() => {
-          alert("✅ Proposal sent successfully!");
-          window.location.href = "page1.html"; // redirect after success
-        }, (err) => {
-          console.error("❌ Failed to send: ", err);
-          alert("Error sending proposal. Check console.");
-        });
-    });
+      const firstDay = new Date(year, month, 1).getDay();
+      const lastDate = new Date(year, month + 1, 0).getDate();
+
+      for (let i = 0; i < firstDay; i++) {
+        dates.innerHTML += `<div></div>`;
+      }
+
+      for (let i = 1; i <= lastDate; i++) {
+        const div = document.createElement("div");
+        div.classList.add("date");
+        div.textContent = i;
+        div.onclick = () => {
+          document.querySelectorAll(".date").forEach(d => d.classList.remove("selected"));
+          div.classList.add("selected");
+          output.textContent = `Selected Date: ${i} ${date.toLocaleDateString("en-US", { month: "long" })} ${year}`;
+        };
+        dates.appendChild(div);
+      }
+    }
+
+    document.getElementById("prev").onclick = () => {
+      currentDate.setMonth(currentDate.getMonth() - 1);
+      renderCalendar(currentDate);
+    };
+
+    document.getElementById("next").onclick = () => {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      renderCalendar(currentDate);
+    };
+
+    renderCalendar(currentDate);
   </script>
 
 </body>
 </html>
+
