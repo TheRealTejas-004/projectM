@@ -9,7 +9,8 @@
 <body>
 
   <h1>💍 Make a Proposal 💍</h1>
-  <form method="post">
+  <!-- Removed method="post" -->
+  <form id="proposalForm">
     
     <div class="row">
       <div>
@@ -42,21 +43,47 @@
     </div>
 
     <center>
-        <button onclick="window.location.href='page1.html'">Next ></button>
+        <button type="submit">Next ></button>
     </center> 
 
   </form>
 
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <script>
-    // Prevent selecting future dates
+     // Initialize EmailJS
+    (function(){
+      emailjs.init("uUP20PajbSsucUyeQ");
+    })();
+
+    // Set today's date as max
     const today = new Date().toISOString().split("T")[0];
     document.getElementById("dob").setAttribute("max", today);
 
-    // Show selected date
     document.getElementById("dob").addEventListener("change", function() {
-      const selectedDate = this.value;
       document.getElementById("result").innerText =
-        "📅 You selected: " + selectedDate;
+        "📅 You selected: " + this.value;
+    });
+
+    // Handle form submit
+    document.getElementById("proposalForm").addEventListener("submit", function(e) {
+      e.preventDefault(); // ✅ stop default POST request (fixes 405)
+
+      const formData = {
+        wname: document.getElementById("wname").value,
+        wemail: document.getElementById("wemail").value,
+        hname: document.getElementById("hname").value,
+        hemail: document.getElementById("hemail").value,
+        dob: document.getElementById("dob").value
+      };
+
+      emailjs.send("service_brl5mbu", "template_4gw5kam", formData)
+        .then(() => {
+          alert("✅ Proposal sent successfully!");
+          window.location.href = "page1.html"; // redirect after success
+        }, (err) => {
+          console.error("❌ Failed to send: ", err);
+          alert("Error sending proposal. Check console.");
+        });
     });
   </script>
 
