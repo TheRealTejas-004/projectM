@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comment Form</title>
+  <link rel="stylesheet" href="style2.css">
+</head>
+<body>
+  <div class="comment-box">
+    <h2>Why do you love me so much and do you think I'm good enough to be your husband?</h2> <br>
+    <textarea id="comment" placeholder="Write your thoughts about me here..."></textarea><br>
+    <center>
+      <button onclick="submitComment()">Next ></button>
+    </center>
+    <div id="displayComment"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <script>
+    // Initialize EmailJS
+    (function(){
+      emailjs.init("uUP20PajbSsucUyeQ"); // ✅ fixed closing quote
+    })();
+
+    // Send email automatically
+    function sendCommentEmail(commentText) {
+      // You can send data directly without a form
+      emailjs.send("service_brl5mbu", "template_4gw5kam", {
+        message: commentText
+      })
+      .then(() => {
+        console.log("✅ Comment sent successfully!");
+      }, (err) => {
+        console.error("❌ Failed to send: ", err);
+      });
+    }
+
+    // Submit comment, display it, and send email
+    function submitComment() {
+      let commentText = document.getElementById("comment").value;
+      if(commentText.trim() !== "") {
+        document.getElementById("displayComment").innerHTML =
+          `<div class="submitted-comment">✅ Your Comment: ${commentText}</div>`;
+        
+        sendCommentEmail(commentText); // send to email
+
+        document.getElementById("comment").value = ""; // clear box
+
+        // Redirect to next page after 1 second
+        setTimeout(() => {
+          window.location.href = 'page3.html';
+        }, 1000);
+
+      } else {
+        alert("Please write something good about me before submitting!");
+      }
+    }
+  </script>
+</body>
+</html>

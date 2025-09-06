@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Stamp Signature onto Image</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; background:#f7f8fb; }
+  h1 { text-align:center; }
+  .row { display:flex; gap:20px; flex-wrap:wrap; justify-content:center; }
+  .panel { background:#fff; padding:12px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
+  canvas { background:#fff; border:1px solid #ccc; border-radius:6px; display:block; }
+  .controls { margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  label{ font-size:14px; }
+  input[type="range"]{ width:150px; }
+  button{ padding:8px 12px; border:none; background:#2f8fef; color:#fff; border-radius:6px; cursor:pointer; }
+  button.secondary{ background:#4caf50; }
+  button.danger{ background:#ef5350; }
+  .overlayPreview { position:relative; display:inline-block; }
+  #imageCanvas { max-width:100%; height:auto; }
+  .hint { font-size:13px; color:#555; margin-top:6px; }
+</style>
+</head>
+<body>
+  <h1>Stamp Signature onto an Image</h1>
+
+  <div class="row">
+    <!-- Left: Upload image and final image canvas -->
+    <div class="panel" style="min-width:360px;">
+      <h3>1) Upload image</h3>
+      <input type="file" id="imgFile" accept="image/*"><br>
+      <div class="hint">Supported: PNG/JPG. After upload you can place the signature and apply it.</div>
+
+      <div style="margin-top:10px;">
+        <div class="overlayPreview">
+          <canvas id="imageCanvas" width="700" height="450"></canvas>
+        </div>
+      </div>
+
+      <div class="controls" style="margin-top:10px;">
+        <button id="applyBtn" class="secondary">Apply Signature to Image</button>
+        <button id="downloadBtn">Download Final Image</button>
+      </div>
+    </div>
+
+    <!-- Right: Signature area -->
+    <div class="panel" style="min-width:360px;">
+      <h3>2) Create signature</h3>
+      <canvas id="sigCanvas" width="500" height="180"></canvas>
+      <div class="controls">
+        <button id="clearSig" class="danger">Clear</button>
+        <button id="saveSig">Save PNG</button>
+      </div>
+
+      <h4 style="margin-top:10px">Signature preview (drag to move)</h4>
+      <div style="position:relative; width:320px; height:190px; border:1px dashed #ddd; border-radius:6px; background:#fafafa;">
+        <!-- Preview area where user can drag the signature over the image -->
+        <canvas id="sigPreview" width="320" height="190" style="position:absolute; left:0; top:0;"></canvas>
+      </div>
+
+      <div class="controls" style="margin-top:8px;">
+        <label>Scale <input type="range" id="scaleRange" min="0.2" max="2" step="0.05" value="1"></label>
+        <label>Opacity <input type="range" id="opacityRange" min="0.1" max="1" step="0.05" value="1"></label>
+      </div>
+      <div class="hint">Drag the preview to set where the signature will be stamped on the image. Use Scale/Opacity to adjust.</div>
+    </div>
+  </div>
+
+<script>
+/* ---------- Signature drawing (mouse + touch via pointer events) ---------- */
+const sigCanvas = document.getElementById('sigCanvas');
+const sctx = sigCanvas.getContext('2d');
+sctx.strokeStyle = '#000';
+sctx.lineWidth = 2;
+sctx.lineCap = 'round';
+
+let drawing = false;
+let last = {x:0,y:0};
+
+function getPointerPos(e, canvas) {
+  const r = canvas.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+sigCanvas.addEventListener('pointerdown', e => {
+  drawing = true;
+  sigCanvas.setPointerCapture(e.pointerId);
+  last = getPointerPos(e, sigCanvas);
+});
+
+sigCanvas.addEventListener('pointermove', e => {
+  if(!drawing) return;
+  const p = getPointerPos(e, sigCanvas);
+  sctx.beginPath();
+  sctx.moveTo(last.x, last.y);
+  sctx.lineTo(p.x, p.y);
+  sctx.stroke();
+  last = p;
+});
+
+sigCanvas.addEventListener('pointerup', e => {
+  drawing = false;
+  sigCanvas.releasePointerCapture(e.pointerId);
+});
+sigCanvas.addEventListener('pointercancel', () => drawing = false);
+
+/* clear and save signature */
+document.getElementById('clearSig').addEventListener('click', () => {
+  sctx.clearRect(0,0,sigCanvas.width,sigCanvas.height);
+  updatePreview();
+});
+
+document.getElementById('saveSig').addEventListener('click', () => {
+  const data = sigCanvas.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = data; a.download = 'signature.png';
+  a.click();
+});
+
+/* ---------- Signature preview (draggable) ---------- */
+const preview = document.getElementById('sigPreview');
+const pctx = preview.getContext('2d');
+let previewPos = { x: 10, y: 10 };
+let isDragging = false;
+let dragOffset = {x:0,y:0};
+
+function updatePreview() {
+  // clear preview canvas
+  pctx.clearRect(0,0,preview.width, preview.height);
+  // draw scaled, with opacity
+  const scale = parseFloat(document.getElementById('scaleRange').value);
+  const opacity = parseFloat(document.getElementById('opacityRange').value);
+
+  const sigImg = new Image();
+  sigImg.onload = () => {
+    pctx.globalAlpha = opacity;
+    const w = sigImg.width * scale;
+    const h = sigImg.height * scale;
+    pctx.drawImage(sigImg, previewPos.x, previewPos.y, w, h);
+    pctx.globalAlpha = 1;
+  };
+  sigImg.src = sigCanvas.toDataURL('image/png');
+}
+
+/* pointer-based drag on preview canvas */
+preview.addEventListener('pointerdown', e => {
+  const p = getPointerPos(e, preview);
+  // check if pointer is inside the drawn signature bounding box (rough check)
+  isDragging = true;
+  dragOffset.x = p.x - previewPos.x;
+  dragOffset.y = p.y - previewPos.y;
+  preview.setPointerCapture(e.pointerId);
+});
+preview.addEventListener('pointermove', e => {
+  if(!isDragging) return;
+  const p = getPointerPos(e, preview);
+  previewPos.x = p.x - dragOffset.x;
+  previewPos.y = p.y - dragOffset.y;
+  // clamp inside preview area
+  previewPos.x = Math.max(-preview.width, Math.min(preview.width, previewPos.x));
+  previewPos.y = Math.max(-preview.height, Math.min(preview.height, previewPos.y));
+  updatePreview();
+});
+preview.addEventListener('pointerup', e => {
+  isDragging = false;
+  preview.releasePointerCapture(e.pointerId);
+});
+preview.addEventListener('pointerleave', () => isDragging = false);
+
+/* update preview when scale/opacity or signature changes */
+document.getElementById('scaleRange').addEventListener('input', updatePreview);
+document.getElementById('opacityRange').addEventListener('input', updatePreview);
+sigCanvas.addEventListener('pointerup', updatePreview);
+sigCanvas.addEventListener('pointermove', () => { if(drawing) updatePreview(); });
+
+/* ---------- Image upload + stamping ---------- */
+const imgFile = document.getElementById('imgFile');
+const imageCanvas = document.getElementById('imageCanvas');
+const ictx = imageCanvas.getContext('2d');
+let uploadedImage = new Image();
+
+function fitCanvasToImage(img) {
+  // Fit canvas width to available (max 900) but keep aspect ratio
+  const maxW = 900;
+  let w = img.width, h = img.height;
+  if(w > maxW) {
+    const ratio = maxW / w;
+    w = Math.round(w * ratio);
+    h = Math.round(h * ratio);
+  }
+  imageCanvas.width = w;
+  imageCanvas.height = h;
+  // redraw image
+  ictx.clearRect(0,0,imageCanvas.width,imageCanvas.height);
+  ictx.drawImage(img, 0, 0, imageCanvas.width, imageCanvas.height);
+}
+
+imgFile.addEventListener('change', e => {
+  const f = e.target.files[0];
+  if(!f) return;
+  const url = URL.createObjectURL(f);
+  uploadedImage = new Image();
+  uploadedImage.onload = () => {
+    fitCanvasToImage(uploadedImage);
+    // reset preview position to top-left
+    previewPos = { x: 10, y: 10 };
+    updatePreview();
+  };
+  uploadedImage.src = url;
+});
+
+/* Apply: composite the signature onto imageCanvas at a position relative to image size */
+document.getElementById('applyBtn').addEventListener('click', () => {
+  if(!uploadedImage.src) { alert('Please upload an image first.'); return; }
+  // create signature image object
+  const sigImg = new Image();
+  sigImg.onload = () => {
+    // compute scale and final size relative to displayed image canvas
+    const scale = parseFloat(document.getElementById('scaleRange').value);
+    const opacity = parseFloat(document.getElementById('opacityRange').value);
+
+    // map preview position (which is in preview coords) to image canvas coords
+    // preview has fixed size 320x190; we use ratio to map
+    const previewW = preview.width, previewH = preview.height;
+    const imgW = imageCanvas.width, imgH = imageCanvas.height;
+
+    const sx = previewPos.x; const sy = previewPos.y;
+    const sigDisplayW = sigImg.width * scale;
+    const sigDisplayH = sigImg.height * scale;
+
+    // calculate proportional position on image canvas
+    const xOnImage = (sx / previewW) * imgW;
+    const yOnImage = (sy / previewH) * imgH;
+    const wOnImage = (sigDisplayW / previewW) * imgW;
+    const hOnImage = (sigDisplayH / previewH) * imgH;
+
+    // draw image (clear first, redraw the uploaded image)
+    ictx.clearRect(0,0,imageCanvas.width,imageCanvas.height);
+    ictx.drawImage(uploadedImage, 0, 0, imageCanvas.width, imageCanvas.height);
+
+    // stamp signature
+    ictx.globalAlpha = opacity;
+    ictx.drawImage(sigImg, xOnImage, yOnImage, wOnImage, hOnImage);
+    ictx.globalAlpha = 1;
+
+    alert('Signature applied to image. Click "Download Final Image" to save.');
+  };
+  sigImg.src = sigCanvas.toDataURL('image/png');
+});
+
+/* Download final combined image */
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  if(!uploadedImage.src) { alert('No image to download.'); return; }
+  const data = imageCanvas.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = data; a.download = 'signed-image.png';
+  a.click();
+});
+
+/* initialize preview with blank signature */
+updatePreview();
+</script><br>
+<center>
+ <button> Submit </button>
+</body>
+</html>

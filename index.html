@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marriage Proposal Form</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <h1>💍 Make a Proposal 💍</h1>
+  <form method="post">
+    
+    <div class="row">
+      <div>
+        <label for="wname">Wife's Name:</label>
+        <input type="text" id="wname" name="wname" placeholder="Enter wife's name" required>
+      </div>
+      <div>
+        <label for="wemail">Wife's Email:</label>
+        <input type="email" id="wemail" name="wemail" placeholder="Enter wife's email" required>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="hname">Husband's Name:</label>
+        <input type="text" id="hname" name="hname" placeholder="Enter husband's name" required>
+      </div>
+      <div>
+        <label for="hemail">Husband's Email:</label>
+        <input type="email" id="hemail" name="hemail" placeholder="Enter husband's email" required>
+      </div>
+    </div>
+
+    <div class="row full-width">
+      <div>
+        <label for="dob">Date of Certificate:</label>
+        <input type="date" id="dob" name="dob" max="">
+        <div class="result" id="result"></div>
+      </div>
+    </div>
+
+    <center>
+        <button onclick="window.location.href='page1.html'">Next ></button>
+    </center> 
+
+  </form>
+
+  <script>
+    // Prevent selecting future dates
+    const today = new Date().toISOString().split("T")[0];
+    document.getElementById("dob").setAttribute("max", today);
+
+    // Show selected date
+    document.getElementById("dob").addEventListener("change", function() {
+      const selectedDate = this.value;
+      document.getElementById("result").innerText =
+        "📅 You selected: " + selectedDate;
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,19 @@
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 100px;
+      height: 100vh;
+      background: #f4f4f9;
+      overflow: hidden; /* prevent scrollbars */
+    }
+    .btn {
+      position: absolute;
+      padding: 12px 25px;
+      font-size: 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background-color: #ff4c4c;
+      color: white;
+      transition: 0.2s;
+    }
