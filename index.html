@@ -4,14 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Marriage Proposal Form</title>
-  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
   <h1>💍 Make a Proposal 💍</h1>
-  <!-- Removed method="post" -->
+
   <form id="proposalForm">
-    
     <div class="row">
       <div>
         <label for="wname">Wife's Name:</label>
@@ -34,122 +32,113 @@
       </div>
     </div>
 
-<div class="container">
-<label class="label" for="date">Choose a date</label>
-<div class="calendar">
-<div id="dateInput" class="date-input" tabindex="0" aria-haspopup="dialog" aria-expanded="false">
-<span id="dateText">Select date</span>
-<span aria-hidden="true">▾</span>
-</div>
+    <!-- Calendar Picker -->
+    <div class="container">
+      <label class="label" for="date">Choose a date</label>
+      <div class="calendar">
+        <div id="dateInput" class="date-input" tabindex="0" aria-haspopup="dialog" aria-expanded="false">
+          <span id="dateText">Select date</span>
+          <span aria-hidden="true">▾</span>
+        </div>
 
+        <div id="picker" class="popup" role="dialog" aria-modal="false">
+          <div class="header">
+            <div class="month-year" id="monthYear">Month Year</div>
+            <div class="nav">
+              <button type="button" id="prevMonth">◀</button>
+              <button type="button" id="nextMonth">▶</button>
+            </div>
+          </div>
+          <div class="weekdays">
+            <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+          </div>
+          <div class="days" id="daysGrid"></div>
+          <div class="footer">
+            <button type="button" id="clearBtn">Clear</button>
+            <div>
+              <button type="button" id="closeBtn">Close</button>
+              <button type="button" id="todayBtn">Today</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p style="margin-top:10px;color:#666">Selected Date of Certification: <code id="isoOut">none</code></p>
+    </div>
 
-<div id="picker" class="popup" role="dialog" aria-modal="false" style="display:none">
-<div class="header">
-<div class="month-year" id="monthYear">Month Year</div>
-<div class="nav">
-<button id="prevMonth" aria-label="Previous month">◀</button>
-<button id="nextMonth" aria-label="Next month">▶</button>
-</div>
-</div>
-<div class="weekdays">
-<div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
-</div>
-<div class="days" id="daysGrid" style="margin-top:8px"></div>
-<div class="footer">
-<button class="btn clear" id="clearBtn">Clear</button>
-<div>
-<button class="btn" id="closeBtn">Close</button>
-<button class="btn today" id="todayBtn">Today</button>
-</div>
-</div>
-</div>
-</div>
-
-
-<p style="margin-top:18px;color:var(--muted);font-size:14px">Selected Date of Certification: <code id="isoOut">none</code></p>
-</div>
-
-    <center>
-        <button onclick="window.location.href='page1.html'"> Next > </button>
+    <center style="margin-top:20px;">
+      <button type="button" class="btn" onclick="window.location.href='page1.html'">Next &gt;</button>
     </center> 
-
   </form>
 
   <script>
-  (function(){
-selected = date;
-onSelect();
-});
+    (function(){
+      const dateInput = document.getElementById('dateInput');
+      const picker = document.getElementById('picker');
+      const daysGrid = document.getElementById('daysGrid');
+      const monthYear = document.getElementById('monthYear');
+      const dateText = document.getElementById('dateText');
+      const isoOut = document.getElementById('isoOut');
 
+      const prevBtn = document.getElementById('prevMonth');
+      const nextBtn = document.getElementById('nextMonth');
+      const closeBtn = document.getElementById('closeBtn');
+      const clearBtn = document.getElementById('clearBtn');
+      const todayBtn = document.getElementById('todayBtn');
 
-el.addEventListener('keydown', (e)=>{
-if(e.key==='Enter' || e.key===' ') { e.preventDefault(); selected = date; onSelect(); }
-});
+      let selected = null;
+      let viewDate = new Date();
 
+      function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+      function endOfMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0); }
+      function isSameDay(a,b){ return a && b && a.toDateString()===b.toDateString(); }
+      function formatDisplay(d){ return d ? d.toLocaleDateString() : 'Select date'; }
+      function toISO(d){ return d ? d.toISOString().slice(0,10) : 'none'; }
 
-daysGrid.appendChild(el);
-}
-}
+      function render(){
+        daysGrid.innerHTML='';
+        const first = startOfMonth(viewDate);
+        const last = endOfMonth(viewDate);
+        const startDay = first.getDay();
+        const totalDays = last.getDate();
 
+        monthYear.textContent = viewDate.toLocaleString(undefined,{month:'long',year:'numeric'});
 
-function openPicker(){ picker.style.display='block'; dateInput.setAttribute('aria-expanded','true'); render(); }
-function closePicker(){ picker.style.display='none'; dateInput.setAttribute('aria-expanded','false'); }
+        for(let i=0;i<startDay;i++){
+          const empty=document.createElement('div');
+          daysGrid.appendChild(empty);
+        }
 
+        for(let day=1;day<=totalDays;day++){
+          const date = new Date(viewDate.getFullYear(),viewDate.getMonth(),day);
+          const el=document.createElement('div');
+          el.className='day';
+          el.textContent=day;
+          if(isSameDay(date,new Date())) el.classList.add('today');
+          if(selected && isSameDay(date,selected)) el.classList.add('selected');
+          el.addEventListener('click',()=>{ selected=date; onSelect(); });
+          daysGrid.appendChild(el);
+        }
+      }
 
-function onSelect(){
-dateText.textContent = formatDisplay(selected);
-isoOut.textContent = toISO(selected);
-closePicker();
-}
+      function openPicker(){ picker.style.display='block'; render(); }
+      function closePicker(){ picker.style.display='none'; }
+      function onSelect(){
+        dateText.textContent=formatDisplay(selected);
+        isoOut.textContent=toISO(selected);
+        closePicker();
+      }
 
+      dateInput.addEventListener('click',()=>{ picker.style.display==='block'?closePicker():openPicker(); });
+      prevBtn.addEventListener('click',()=>{ viewDate=new Date(viewDate.getFullYear(),viewDate.getMonth()-1,1); render(); });
+      nextBtn.addEventListener('click',()=>{ viewDate=new Date(viewDate.getFullYear(),viewDate.getMonth()+1,1); render(); });
+      closeBtn.addEventListener('click',closePicker);
+      clearBtn.addEventListener('click',()=>{ selected=null; dateText.textContent='Select date'; isoOut.textContent='none'; render(); });
+      todayBtn.addEventListener('click',()=>{ selected=new Date(); viewDate=new Date(); onSelect(); });
 
-// events
-dateInput.addEventListener('click', ()=>{ if(picker.style.display==='block') closePicker(); else openPicker(); });
-dateInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' ') { e.preventDefault(); if(picker.style.display==='block') closePicker(); else openPicker(); } if(e.key==='Escape'){ closePicker(); }});
+      document.addEventListener('click',(e)=>{ if(!document.querySelector('.calendar').contains(e.target)) closePicker(); });
 
-
-prevBtn.addEventListener('click', ()=>{ viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth()-1, 1); render(); });
-nextBtn.addEventListener('click', ()=>{ viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth()+1, 1); render(); });
-
-
-closeBtn.addEventListener('click', closePicker);
-clearBtn.addEventListener('click', ()=>{ selected = null; dateText.textContent='Select date'; isoOut.textContent='none'; render(); });
-todayBtn.addEventListener('click', ()=>{ selected = new Date(); viewDate = new Date(selected.getFullYear(), selected.getMonth(), 1); onSelect(); });
-
-
-// click outside to close
-document.addEventListener('click', (e)=>{ if(!document.querySelector('.calendar').contains(e.target)) closePicker(); });
-
-
-// initialize
-(function init(){
-// set viewDate to today by default
-viewDate = new Date();
-render();
-})();
-
-
-// Expose optional API to window for easy integration
-window.calendarPicker = {
-getSelected: ()=>selected ? new Date(selected) : null,
-setSelectedISO: (iso)=>{
-if(!iso) { selected = null; dateText.textContent='Select date'; isoOut.textContent='none'; render(); return; }
-const d = new Date(iso);
-if(isNaN(d)) return false;
-selected = d; viewDate = new Date(d.getFullYear(), d.getMonth(), 1); dateText.textContent = formatDisplay(selected); isoOut.textContent = toISO(selected); render(); return true;
-}
-}
-
-
-})();
+      render();
+    })();
   </script>
-
 </body>
 </html>
-
-
-
-
-
-
-
